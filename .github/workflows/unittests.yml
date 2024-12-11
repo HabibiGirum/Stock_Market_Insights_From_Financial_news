@@ -2,7 +2,7 @@ name: week-1 CI test
 
 on:
   push:
-    branches: [week-0]
+    branches: [main]
 
 jobs:
   build:
