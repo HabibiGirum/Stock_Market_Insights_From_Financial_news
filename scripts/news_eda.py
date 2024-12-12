@@ -61,5 +61,61 @@ class NewsEDA:
         plt.ylabel('Number of Articles')
         plt.show()
         return sentiment_counts
+    def extract_keywords(self, max_features=20):
+        """
+        Extract common keywords from headlines.
+        """
+        vectorizer = CountVectorizer(stop_words='english', max_features=max_features)
+        X = vectorizer.fit_transform(self.df['headline'])
+        keywords = vectorizer.get_feature_names_out()
+        return keywords
     
+    def analyze_publication_trends(self):
+        """
+        Analyze publication frequency over time.
+        """
+        self.df['date'] = pd.to_datetime(self.df['date'])
+        publication_trends = self.df.resample('D', on='date').size()
+        publication_trends.plot(figsize=(12, 6), color='blue')
+        plt.title('Publication Frequency Over Time')
+        plt.xlabel('Date')
+        plt.ylabel('Number of Articles')
+        plt.show()
+        return publication_trends
+    
+    def analyze_publishing_times(self):
+        """
+        Analyze publishing times by hour.
+        """
+        self.df['hour'] = self.df['date'].dt.hour
+        articles_by_hour = self.df['hour'].value_counts().sort_index()
+        articles_by_hour.plot(kind='bar', figsize=(10, 6), color='purple')
+        plt.title('Publication Frequency by Hour')
+        plt.xlabel('Hour of the Day')
+        plt.ylabel('Number of Articles')
+        plt.show()
+        return articles_by_hour
+    
+    
+    def generate_wordcloud_for_publishers(self, top_n=10):
+        """
+        Generate word clouds for top publishers.
+        """
+        top_publishers = self.df['publisher'].value_counts().head(top_n)
+        for publisher in top_publishers.index:
+            text = " ".join(self.df[self.df['publisher'] == publisher]['headline'])
+            wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+            plt.figure(figsize=(10, 5))
+            plt.imshow(wordcloud, interpolation='bilinear')
+            plt.title(f'WordCloud for {publisher}')
+            plt.axis('off')
+            plt.show()
+    
+    def extract_unique_domains(self):
+        """
+        Extract unique domains from publisher email addresses.
+        """
+        self.df['domain'] = self.df['publisher'].str.extract(r'@(.+)$')
+        domain_counts = self.df['domain'].value_counts()
+        return domain_counts
     
