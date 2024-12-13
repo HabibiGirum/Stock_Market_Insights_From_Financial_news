@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
 
@@ -10,14 +10,15 @@ class NewsEDA:
         Initialize the class with a pandas DataFrame.
         """
         self.df = dataframe
-    
+        self.analyzer = SentimentIntensityAnalyzer()
+
     def calculate_headline_length(self):
         """
         Add a column for headline length and return descriptive statistics.
         """
         self.df['headline_length'] = self.df['headline'].apply(len)
         return self.df['headline_length'].describe()
-    
+
     def count_articles_per_publisher(self, top_n=10):
         """
         Count the number of articles per publisher and return the top publishers.
@@ -30,7 +31,7 @@ class NewsEDA:
         plt.xticks(rotation=45)
         plt.show()
         return publisher_counts
-    
+
     def analyze_publication_dates(self):
         """
         Analyze publication trends over days of the week.
@@ -45,12 +46,16 @@ class NewsEDA:
         plt.xticks(rotation=45)
         plt.show()
         return articles_by_day
-    
+
     def perform_sentiment_analysis(self):
         """
         Perform sentiment analysis on headlines and categorize the sentiment.
         """
-        self.df['sentiment'] = self.df['headline'].apply(lambda x: TextBlob(x).sentiment.polarity)
+        def analyze_sentiment(headline):
+            scores = self.analyzer.polarity_scores(headline)
+            return scores['compound']
+
+        self.df['sentiment'] = self.df['headline'].apply(analyze_sentiment)
         self.df['sentiment_category'] = pd.cut(
             self.df['sentiment'], bins=[-1, -0.1, 0.1, 1], labels=['Negative', 'Neutral', 'Positive']
         )
@@ -61,6 +66,7 @@ class NewsEDA:
         plt.ylabel('Number of Articles')
         plt.show()
         return sentiment_counts
+
     def extract_keywords(self, max_features=20):
         """
         Extract common keywords from headlines.
@@ -69,7 +75,7 @@ class NewsEDA:
         X = vectorizer.fit_transform(self.df['headline'])
         keywords = vectorizer.get_feature_names_out()
         return keywords
-    
+
     def analyze_publication_trends(self):
         """
         Analyze publication frequency over time.
@@ -82,7 +88,7 @@ class NewsEDA:
         plt.ylabel('Number of Articles')
         plt.show()
         return publication_trends
-    
+
     def analyze_publishing_times(self):
         """
         Analyze publishing times by hour.
@@ -95,8 +101,7 @@ class NewsEDA:
         plt.ylabel('Number of Articles')
         plt.show()
         return articles_by_hour
-    
-    
+
     def generate_wordcloud_for_publishers(self, top_n=10):
         """
         Generate word clouds for top publishers.
@@ -110,7 +115,7 @@ class NewsEDA:
             plt.title(f'WordCloud for {publisher}')
             plt.axis('off')
             plt.show()
-    
+
     def extract_unique_domains(self):
         """
         Extract unique domains from publisher email addresses.
@@ -118,4 +123,5 @@ class NewsEDA:
         self.df['domain'] = self.df['publisher'].str.extract(r'@(.+)$')
         domain_counts = self.df['domain'].value_counts()
         return domain_counts
+
     
