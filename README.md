@@ -1,6 +1,5 @@
 # week-1 project stock market price and news correlation 
 ## stock market price prediction based on financial news
-## Build and Test Status
 
 ![Build Status](https://github.com/HabibiGirum/Stock_Market_Insights_From_Financial_news/actions/workflows/unittests.yml/badge.svg)
 
