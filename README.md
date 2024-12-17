@@ -70,6 +70,23 @@ By analyzing the sentiment and content of news headline, this project aims to pr
 
 ---
 
+In detail document explore with this link [google docs](https://drive.google.com/file/d/1YP59-FNSFEq7LBXRs-64W57DEhUs6EUC/view?usp=sharing)
+
+
+### References
+- [yfinance Library](https://pypi.org/project/yfinance/)
+- [Ta-lib](https://pypi.org/project/ta-lib/)
+- [sentiment analysis](https://www.analyticsvidhya.com/blog/2022/07/sentiment-analysis-using-python/)
+
+Python Libraries
+
+```pandas``` for data manipulation
+```matplotlib``` and ```seaborn``` for data visualization
+
+
+
+
 
 ## Author  
-[HabibiGirum](https://github.com/HabibiGirum)
+GitHub: [HabibiGirum](https://github.com/HabibiGirum)
+Email:  [Habtamu Girum](habtamugirum478@gmail.com)
