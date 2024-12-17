@@ -1,8 +1,8 @@
 import pandas as pd
 from textblob import TextBlob
-import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+import seaborn as sns
 
 class NewsStockCorrelation:
     def __init__(self, news_df, stock_df):
@@ -18,57 +18,41 @@ class NewsStockCorrelation:
 
     def prepare_data(self):
         """
-        Normalize and align dates in both datasets to ensure compatibility.
+        Prepare data by parsing dates and merging news and stock datasets.
         """
-        # Ensure datetime format
-        self.news_df['date'] = pd.to_datetime(self.news_df['date']).dt.date
-        self.stock_df['Date'] = pd.to_datetime(self.stock_df['Date']).dt.date
+        # Parse dates in news_df and stock_df
+        self.news_df['date'] = pd.to_datetime(self.news_df['date'], errors='coerce').dt.date
+        self.stock_df['Date'] = pd.to_datetime(self.stock_df['Date'], errors='coerce').dt.date
 
-        # Group news data by date and aggregate headlines into lists
-        grouped_news = self.news_df.groupby('date')['headline'].apply(list).reset_index()
+        # Merge datasets on the date column
+        self.merged_df = pd.merge(self.news_df, self.stock_df, left_on='date', right_on='Date', how='inner')
 
-        # Merge stock and grouped news data
-        self.merged_df = pd.merge(
-            self.stock_df,
-            grouped_news,
-            left_on='Date',
-            right_on='date',
-            how='left'
+        # Perform sentiment analysis
+        self.merged_df['sentiment_score'] = self.merged_df['headline'].apply(
+            lambda x: TextBlob(str(x)).sentiment.polarity
         )
 
-        # Drop duplicate date column
-        self.merged_df.drop('date', axis=1, inplace=True)
+        # Drop rows with NaN values
+        self.merged_df.dropna(subset=['sentiment_score', 'Close'], inplace=True)
 
-        print("Data Preparation Complete: Stock and News Data Merged.")
-        return self.merged_df.head()
-
-    def perform_sentiment_analysis(self):
-        """
-        Assign sentiment scores to news headlines using TextBlob.
-        """
-        def calculate_sentiment(headlines):
-            if pd.isna(headlines) or not headlines:  # Handle empty or NaN headlines
-                return None
-            return np.mean([TextBlob(headline).sentiment.polarity for headline in headlines])
-
-        # Compute sentiment score
-        self.merged_df['Sentiment_Score'] = self.merged_df['headline'].apply(calculate_sentiment)
-
-        print("Sentiment Analysis Complete: Sentiment Scores Computed.")
-        return self.merged_df[['Date', 'Sentiment_Score']].head()
+        print("Data Preparation Completed. Merged Data Preview:")
+        print(self.merged_df.head())
 
     def calculate_daily_returns(self):
         """
         Calculate daily percentage change in stock closing prices.
         """
-        # Daily percentage return
+        # Calculate daily percentage return
         self.merged_df['Daily_Return'] = self.merged_df['Close'].pct_change()
 
         # Shift sentiment scores to align with previous day's stock movement
-        self.merged_df['Shifted_Sentiment'] = self.merged_df['Sentiment_Score'].shift(1)
+        self.merged_df['Shifted_Sentiment'] = self.merged_df['sentiment_score'].shift(1)
 
-        print("Daily Returns and Sentiment Shift Complete.")
-        return self.merged_df[['Date', 'Daily_Return', 'Shifted_Sentiment']].head()
+        # Drop rows with NaN values
+        self.merged_df.dropna(subset=['Daily_Return', 'Shifted_Sentiment'], inplace=True)
+
+        print("Daily Returns and Shifted Sentiment Calculation Complete.")
+        print(self.merged_df[['Date', 'Daily_Return', 'Shifted_Sentiment']].head())
 
     def analyze_correlation(self):
         """
@@ -76,9 +60,6 @@ class NewsStockCorrelation:
         """
         # Drop rows with missing values
         analysis_df = self.merged_df.dropna(subset=['Daily_Return', 'Shifted_Sentiment'])
-
-        if analysis_df.empty:
-            raise ValueError("No valid data available for correlation analysis.")
 
         # Calculate Pearson correlation coefficient
         correlation, p_value = pearsonr(analysis_df['Shifted_Sentiment'], analysis_df['Daily_Return'])
@@ -89,23 +70,32 @@ class NewsStockCorrelation:
             "P_Value": p_value
         }
 
-    def visualize_correlation(self):
+    def plot_correlation_heatmap(self):
         """
-        Visualize the relationship between sentiment scores and stock returns.
+        Plot a refined correlation heatmap focusing on relevant features.
         """
-        analysis_df = self.merged_df.dropna(subset=['Daily_Return', 'Shifted_Sentiment'])
+        if self.merged_df is None or self.merged_df.empty:
+            raise ValueError("Merged data is not prepared. Run prepare_data() first.")
 
-        plt.figure(figsize=(10, 6))
-        plt.scatter(analysis_df['Shifted_Sentiment'], analysis_df['Daily_Return'], alpha=0.6, color='blue')
-        plt.title('Sentiment Scores vs. Stock Daily Returns')
-        plt.xlabel('Shifted Sentiment Score')
-        plt.ylabel('Daily Return (%)')
-        plt.grid(True)
+        # Drop unnecessary columns
+        refined_df = self.merged_df.drop(columns=['Unnamed: 0'], errors='ignore')
+
+        # Select only numeric columns for correlation
+        numeric_df = refined_df.select_dtypes(include=['number'])
+
+        # Compute correlation matrix
+        correlation_matrix = numeric_df.corr()
+
+        # Plot refined heatmap
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(correlation_matrix, annot=True, cmap='viridis', linewidths=0.5, fmt=".2f")
+        plt.title("Refined Correlation Heatmap of the Dataset")
         plt.show()
+
 
     def summarize_analysis(self):
         """
-        Summarize key findings from correlation analysis.
+        Summarize correlation results and insights.
         """
         correlation_results = self.analyze_correlation()
         correlation = correlation_results['Correlation_Coefficient']
@@ -124,5 +114,6 @@ class NewsStockCorrelation:
             "Insights": insight
         }
 
-        print("Summary of Analysis:")
+        print("\nSummary of Analysis:")
+        print(summary)
         return summary
