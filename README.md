@@ -89,4 +89,6 @@ Python Libraries
 
 ## Author  
 GitHub: [HabibiGirum](https://github.com/HabibiGirum)
-Email:  [Habtamu Girum](habtamugirum478@gmail.com)
+
+Email:  habtamugirum478@gmail.com
+
